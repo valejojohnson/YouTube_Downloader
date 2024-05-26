@@ -53,21 +53,22 @@ Enter the YouTube video or playlist URLs (comma separated): https://www.youtube.
 
 ## Host Machine Requirements
 
-Operating System: Any OS that supports Python
-Internet connection
-AWS account with S3 access
-Sufficient storage for downloading videos locally
+- Operating System: Any OS that supports Python
+- Internet connection
+- AWS account with S3 access
+- Sufficient storage for downloading videos locally
 
 ## Notes
 
-Ensure you have enough space in your local machine to store the downloaded videos before they are uploaded to S3.
+- Ensure you have enough space in your local machine to store the downloaded videos before they are uploaded to S3.
 The script uses the highest resolution available for downloading videos.
-Make sure your AWS credentials are configured properly to allow access to S3.
+- Make sure your AWS credentials are configured properly to allow access to S3.
 
 ## Troubleshooting
 
-File Not Found Error: Ensure the file path is correct and you have the necessary permissions.
-No Credentials Error: Make sure your AWS credentials are set up correctly.
+- File Not Found Error: Ensure the file path is correct and you have the necessary permissions.
+- No Credentials Error: Make sure your AWS credentials are set up correctly.
+
 Feel free to modify the script to suit your needs!
 
 Enjoy downloading and uploading your favorite YouTube videos!
