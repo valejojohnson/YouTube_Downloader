@@ -136,6 +136,6 @@ def process_single_video(url, save_path, bucket_name, playlist_folder_name=None)
 if __name__ == "__main__":
     urls = input("Enter the YouTube video or playlist URLs (comma separated): ").split(',')
     save_path = os.path.expanduser("~/")  # Home directory
-    bucket_name = 'bucket-name-goes-here' # Just the bucket name not the full ARN
+    bucket_name = 'bucket-name-goes-here'  # Just the bucket name not the full ARN - EXAMPLE: 'my-s3-youtube-bucket'
 
     process_youtube_videos(urls, save_path, bucket_name)
