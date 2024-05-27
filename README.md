@@ -1,4 +1,4 @@
-# YouTube Video Downloader and S3 Uploader
+# YouTube Video Downloader and Upload to S3
 
 This script downloads YouTube videos or playlists, saves them locally, and then uploads them to an Amazon S3 bucket. If the video already exists in the S3 bucket, it skips the download to save time and bandwidth.
 
@@ -21,7 +21,7 @@ pip install boto3 pytube tqdm
 
 - Clone this repository or download the script.
 - Open a terminal and navigate to the directory containing the script.
-- Run the script with the following command: ```python download_youtube.py```
+- Run the script with the following command: ```python3 download_youtube.py```
 - Enter the YouTube video or playlist URLs when prompted (comma separated).
 
 The script will process each URL, download the videos, and upload them to the specified S3 bucket. 
