@@ -3,10 +3,15 @@ import re
 import boto3
 from pytube import YouTube, Playlist
 from tqdm import tqdm
-from botocore.exceptions import NoCredentialsError
+from botocore.exceptions import NoCredentialsError, ClientError
+from colorama import Fore, Style, init
+
+init(autoreset=True)
+
 
 def sanitize_filename(filename):
     return re.sub(r'[^A-Za-z0-9]+', '_', filename)
+
 
 def download_youtube_video(video_url, save_path):
     try:
@@ -30,6 +35,7 @@ def download_youtube_video(video_url, save_path):
         print(f"An error occurred during download: {e}")
         return None, None, None
 
+
 def upload_to_s3(file_path, bucket_name, s3_file_name):
     s3 = boto3.client('s3')
     total_size = os.path.getsize(file_path)
@@ -43,16 +49,21 @@ def upload_to_s3(file_path, bucket_name, s3_file_name):
         s3.upload_file(file_path, bucket_name, s3_file_name, Callback=upload_progress)
         progress.close()
 
-        print(f"Upload Successful: {s3_file_name}")
+        print(Fore.GREEN + f"Upload Successful: {s3_file_name}")
         return True
     except FileNotFoundError:
-        print("The file was not found")
+        print(Fore.RED + "The file was not found")
         progress.close()
         return False
     except NoCredentialsError:
-        print("Credentials not available")
+        print(Fore.RED + "Credentials not available")
         progress.close()
         return False
+    except ClientError as e:
+        print(Fore.RED + f"Client error: {e}")
+        progress.close()
+        return False
+
 
 def delete_local_file(file_path):
     try:
@@ -60,6 +71,7 @@ def delete_local_file(file_path):
         print(f"Deleted local file: {file_path}")
     except Exception as e:
         print(f"An error occurred while deleting the file: {e}")
+
 
 def file_exists_in_s3(bucket_name, s3_file_name):
     s3 = boto3.client('s3')
@@ -73,6 +85,7 @@ def file_exists_in_s3(bucket_name, s3_file_name):
         else:
             raise
 
+
 def bucket_exists(bucket_name):
     s3 = boto3.client('s3')
     try:
@@ -85,6 +98,7 @@ def bucket_exists(bucket_name):
         else:
             raise
 
+
 def create_bucket(bucket_name):
     s3 = boto3.client('s3')
     try:
@@ -94,6 +108,18 @@ def create_bucket(bucket_name):
     except Exception as e:
         print(f"An error occurred while creating the bucket: {e}")
         return False
+
+
+def check_credentials():
+    s3 = boto3.client('s3')
+    try:
+        s3.list_buckets()
+        print("AWS credentials are valid and accessible.")
+        return True
+    except NoCredentialsError:
+        print("AWS credentials are not available.")
+        return False
+
 
 def process_youtube_videos(urls, save_path, bucket_name):
     if not bucket_exists(bucket_name):
@@ -115,6 +141,7 @@ def process_youtube_videos(urls, save_path, bucket_name):
         else:
             process_single_video(url, save_path, bucket_name)
 
+
 def process_single_video(url, save_path, bucket_name, playlist_folder_name=None):
     yt = YouTube(url)
     s3_folder_name = sanitize_filename(yt.author)
@@ -133,9 +160,13 @@ def process_single_video(url, save_path, bucket_name, playlist_folder_name=None)
     else:
         print(f"Skipping download of {yt.title} as it already exists in S3.")
 
-if __name__ == "__main__":
-    urls = input("Enter the YouTube video or playlist URLs (comma separated): ").split(',')
-    save_path = os.path.expanduser("~/")  # Home directory
-    bucket_name = 'bucket-name-goes-here'  # Just the bucket name not the full ARN - EXAMPLE: 'my-s3-youtube-bucket'
 
-    process_youtube_videos(urls, save_path, bucket_name)
+if __name__ == "__main__":
+    if not check_credentials():
+        print(Fore.RED + "Exiting due to invalid AWS credentials.")
+    else:
+        urls = input("Enter the YouTube video or playlist URLs (comma separated): ").split(',')
+        save_path = os.path.expanduser("~/")  # Home directory
+        bucket_name = 'tisacrest-youtube-vids'
+
+        process_youtube_videos(urls, save_path, bucket_name)
