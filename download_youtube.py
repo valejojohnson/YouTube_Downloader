@@ -167,6 +167,6 @@ if __name__ == "__main__":
     else:
         urls = input("Enter the YouTube video or playlist URLs (comma separated): ").split(',')
         save_path = os.path.expanduser("~/")  # Home directory
-        bucket_name = 'tisacrest-youtube-vids'
+        bucket_name = 'demo-s3-bucket'  # Place your valid S3 Bucket name here
 
         process_youtube_videos(urls, save_path, bucket_name)
