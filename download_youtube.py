@@ -1,17 +1,16 @@
 import os
 import re
+import sys
 import boto3
 from pytube import YouTube, Playlist
 from tqdm import tqdm
-from botocore.exceptions import NoCredentialsError, ClientError
+from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
 from colorama import Fore, Style, init
 
 init(autoreset=True)
 
-
 def sanitize_filename(filename):
     return re.sub(r'[^A-Za-z0-9]+', '_', filename)
-
 
 def download_youtube_video(video_url, save_path):
     try:
@@ -34,7 +33,6 @@ def download_youtube_video(video_url, save_path):
     except Exception as e:
         print(f"An error occurred during download: {e}")
         return None, None, None
-
 
 def upload_to_s3(file_path, bucket_name, s3_file_name):
     s3 = boto3.client('s3')
@@ -64,14 +62,12 @@ def upload_to_s3(file_path, bucket_name, s3_file_name):
         progress.close()
         return False
 
-
 def delete_local_file(file_path):
     try:
         os.remove(file_path)
         print(f"Deleted local file: {file_path}")
     except Exception as e:
         print(f"An error occurred while deleting the file: {e}")
-
 
 def file_exists_in_s3(bucket_name, s3_file_name):
     s3 = boto3.client('s3')
@@ -85,7 +81,6 @@ def file_exists_in_s3(bucket_name, s3_file_name):
         else:
             raise
 
-
 def bucket_exists(bucket_name):
     s3 = boto3.client('s3')
     try:
@@ -98,7 +93,6 @@ def bucket_exists(bucket_name):
         else:
             raise
 
-
 def create_bucket(bucket_name):
     s3 = boto3.client('s3')
     try:
@@ -109,28 +103,48 @@ def create_bucket(bucket_name):
         print(f"An error occurred while creating the bucket: {e}")
         return False
 
-
-def check_credentials():
+def check_credentials(bucket_name):
     s3 = boto3.client('s3')
     try:
+        # Check if the credentials can list all buckets
         s3.list_buckets()
-        print("AWS credentials are valid and accessible.")
+        print(Fore.GREEN + "AWS credentials are valid.")
+
+        # Check if the credentials can list the specified bucket's contents
+        s3.list_objects_v2(Bucket=bucket_name)
+        print(Fore.GREEN + f"Access to bucket '{bucket_name}' is granted.")
         return True
     except NoCredentialsError:
-        print("AWS credentials are not available.")
+        print(Fore.RED + "AWS credentials are not available or valid.")
+        return False
+    except PartialCredentialsError:
+        print(Fore.RED + "AWS credentials are partially valid.")
+        return False
+    except ClientError as e:
+        error_code = e.response['Error']['Code']
+        if error_code == 'AccessDenied':
+            print(Fore.RED + f"Access to bucket '{bucket_name}' is denied.")
+        else:
+            print(Fore.RED + f"An error occurred: {e}")
         return False
 
-
 def process_youtube_videos(urls, save_path, bucket_name):
+    if not bucket_name:
+        raise ValueError("No bucket name provided. Please specify a valid S3 bucket name.")
+
     if not bucket_exists(bucket_name):
-        create_bucket_response = input(f"The bucket '{bucket_name}' does not exist. Do you want to create it? (yes/no): ").strip().lower()
-        if create_bucket_response == 'yes':
-            if not create_bucket(bucket_name):
-                print("Failed to create bucket. Exiting.")
+        while True:
+            create_bucket_response = input(f"The bucket '{bucket_name}' does not exist. Do you want to create it? (Y/N): ").strip().lower()
+            if create_bucket_response == 'y':
+                if not create_bucket(bucket_name):
+                    print("Failed to create bucket. Exiting.")
+                    return
+                break
+            elif create_bucket_response == 'n':
+                print("Bucket does not exist and will not be created. Exiting.")
                 return
-        else:
-            print("Bucket does not exist and will not be created. Exiting.")
-            return
+            else:
+                print("Invalid response. Please enter 'Y' or 'N'.")
 
     for url in urls:
         if 'playlist' in url:
@@ -140,7 +154,6 @@ def process_youtube_videos(urls, save_path, bucket_name):
                 process_single_video(video_url, save_path, bucket_name, playlist_folder_name)
         else:
             process_single_video(url, save_path, bucket_name)
-
 
 def process_single_video(url, save_path, bucket_name, playlist_folder_name=None):
     yt = YouTube(url)
@@ -160,13 +173,17 @@ def process_single_video(url, save_path, bucket_name, playlist_folder_name=None)
     else:
         print(f"Skipping download of {yt.title} as it already exists in S3.")
 
-
 if __name__ == "__main__":
-    if not check_credentials():
+    bucket_name = input("Enter the S3 bucket name: ").strip()
+    if not bucket_name:
+        print(Fore.RED + "Error: No bucket name provided.")
+        sys.exit(1)
+
+    if not check_credentials(bucket_name):
         print(Fore.RED + "Exiting due to invalid AWS credentials.")
+        sys.exit(1)
     else:
         urls = input("Enter the YouTube video or playlist URLs (comma separated): ").split(',')
         save_path = os.path.expanduser("~/")  # Home directory
-        bucket_name = 'demo-s3-bucket'  # Place your valid S3 Bucket name here
 
         process_youtube_videos(urls, save_path, bucket_name)
