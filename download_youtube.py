@@ -174,10 +174,12 @@ def process_single_video(url, save_path, bucket_name, playlist_folder_name=None)
         print(f"Skipping download of {yt.title} as it already exists in S3.")
 
 if __name__ == "__main__":
-    bucket_name = input("Enter the S3 bucket name: ").strip()
+    bucket_name = ""
     if not bucket_name:
-        print(Fore.RED + "Error: No bucket name provided.")
-        sys.exit(1)
+        bucket_name = input("Enter the S3 bucket name: ").strip()
+        if not bucket_name:
+            print(Fore.RED + "Error: No bucket name provided.")
+            sys.exit(1)
 
     if not check_credentials(bucket_name):
         print(Fore.RED + "Exiting due to invalid AWS credentials.")
