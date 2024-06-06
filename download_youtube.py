@@ -38,7 +38,7 @@ def upload_to_s3(file_path, bucket_name, s3_file_name):
     s3 = boto3.client('s3')
     total_size = os.path.getsize(file_path)
 
-    progress = tqdm(total=total_size, unit='B', unit_scale=True, desc="Uploading")
+    progress = tqdm(total=total_size, unit='B', unit_scale=True, desc="Uploading to S3")
 
     def upload_progress(chunk):
         progress.update(chunk)
@@ -174,7 +174,7 @@ def process_single_video(url, save_path, bucket_name, playlist_folder_name=None)
         print(f"Skipping download of {yt.title} as it already exists in S3.")
 
 if __name__ == "__main__":
-    bucket_name = ""
+    bucket_name = ""  # Enter the S3 bucket name here
     if not bucket_name:
         bucket_name = input("Enter the S3 bucket name: ").strip()
         if not bucket_name:
