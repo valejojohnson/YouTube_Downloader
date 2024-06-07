@@ -75,7 +75,7 @@ def file_exists_in_s3(bucket_name, s3_file_name):
         s3.head_object(Bucket=bucket_name, Key=s3_file_name)
         print(f"File already exists in S3: {s3_file_name}")
         return True
-    except s3.exceptions.ClientError as e:
+    except ClientError as e:
         if e.response['Error']['Code'] == '404':
             return False
         else:
@@ -87,7 +87,7 @@ def bucket_exists(bucket_name):
         s3.head_bucket(Bucket=bucket_name)
         print(f"Bucket exists: {bucket_name}")
         return True
-    except s3.exceptions.ClientError as e:
+    except ClientError as e:
         if e.response['Error']['Code'] == '404':
             return False
         else:
@@ -133,18 +133,17 @@ def process_youtube_videos(urls, save_path, bucket_name):
         raise ValueError("No bucket name provided. Please specify a valid S3 bucket name.")
 
     if not bucket_exists(bucket_name):
-        while True:
-            create_bucket_response = input(f"The bucket '{bucket_name}' does not exist. Do you want to create it? (Y/N): ").strip().lower()
-            if create_bucket_response == 'y':
-                if not create_bucket(bucket_name):
-                    print("Failed to create bucket. Exiting.")
-                    return
-                break
-            elif create_bucket_response == 'n':
-                print("Bucket does not exist and will not be created. Exiting.")
+        create_bucket_response = input(f"The bucket '{bucket_name}' does not exist. Do you want to create it? (Y/N): ").strip().lower()
+        if create_bucket_response == 'y':
+            if not create_bucket(bucket_name):
+                print("Failed to create bucket. Exiting.")
                 return
-            else:
-                print("Invalid response. Please enter 'Y' or 'N'.")
+        elif create_bucket_response == 'n':
+            print("Bucket does not exist and will not be created. Exiting.")
+            return
+        else:
+            print("Invalid response. Please enter 'Y' or 'N'.")
+            return
 
     for url in urls:
         if 'playlist' in url:
